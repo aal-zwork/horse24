@@ -1,0 +1,7 @@
+/api
+/*-etc
+/www
+/backup
+
+/*.env
+!/*.example.env
