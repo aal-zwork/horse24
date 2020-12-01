@@ -1,7 +1,5 @@
-/api
-/*-etc
-/www
+/volumes
 /backup
 
 /*.env
-!/*.example.env
+!/example.*.env

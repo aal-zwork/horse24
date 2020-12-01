@@ -2,23 +2,23 @@ version: '3'
 
 services:
     sourcedb:
-        build: ./sourcedb-docker
+        build: ./api/docker/sourcedb
         restart: unless-stopped
         ports:
             - "3307:3306"
         volumes:
-            - ./sourcedb-etc:/root/.ssh
+            - ./volumes/sourcedb-ssh:/.ssh
         command: [ "ssh", "-NL", "0.0.0.0:3306:${SOURCE_DB_HOST:-localhost}:${SOURCE_DB_PORT:-3306}", "${SOURCE_DB_PROXY_HOST}" ]
     db:
         image: mysql:8.0.21
         depends_on:
             - sourcedb
         restart: unless-stopped
-        env_file: mysql.env
+        env_file: .mysql.env
         ports:
             - "3306:3306"
         volumes:
-            - ./db-etc:/etc/mysql/conf.d
+            - ./volumes/db-conf:/etc/mysql/conf.d
             - db-var:/var/lib/mysql
             - db-log:/var/log/mysql
         cap_add:
@@ -26,11 +26,9 @@ services:
     api:
         depends_on:
             - db
-        build: ./api-docker
+        build: ./api
         restart: unless-stopped
-        env_file: api.env
-        volumes:
-            - ./api:/api
+        env_file: ./.mysql.env
     nginx:
         depends_on:
             - api
@@ -40,10 +38,24 @@ services:
             - "${HTTP_PORT:-80}:80"
             - "${HTTPS_PORT:-443}:443"
         volumes:
-            - ./nginx-etc:/etc/nginx/conf.d
-            - ./letsencrypt-etc:/etc/letsencrypt
-            - ./www:/var/www
+            - ./volumes/nginx-etc:/etc/nginx/conf.d
+            - ./volumes/nginx-letsencrypt:/etc/letsencrypt
+            - ./volumes/nginx-www:/var/www
             - nginx-log:/var/log/nginx/
+    pma_source_db:
+        image: phpmyadmin/phpmyadmin
+        environment:
+            - PMA_HOST=sourcedb
+            - PMA_PORT=3306
+        ports:
+            - 82:80
+    pma_prod_db:
+        image: phpmyadmin/phpmyadmin
+        environment:
+            - PMA_HOST=db
+            - PMA_PORT=3306
+        ports:
+            - 81:80
 volumes:
     db-var:
     db-log:
