@@ -1,5 +1,7 @@
+/.idea
 /volumes
 /backup
 
 /*.env
-!/example.*.env
+!/.example.*.env
+!/.example.env

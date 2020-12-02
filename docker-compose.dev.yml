@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  pma_source_db:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_HOST=sourcedb
+      - PMA_PORT=3306
+    ports:
+      - 82:80
+  pma_prod_db:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+    ports:
+      - 81:80

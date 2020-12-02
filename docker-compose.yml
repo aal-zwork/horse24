@@ -1,62 +1,63 @@
 version: '3'
 
 services:
-    sourcedb:
-        build: ./api/docker/sourcedb
-        restart: unless-stopped
-        ports:
-            - "3307:3306"
-        volumes:
-            - ./volumes/sourcedb-ssh:/.ssh
-        command: [ "ssh", "-NL", "0.0.0.0:3306:${SOURCE_DB_HOST:-localhost}:${SOURCE_DB_PORT:-3306}", "${SOURCE_DB_PROXY_HOST}" ]
-    db:
-        image: mysql:8.0.21
-        depends_on:
-            - sourcedb
-        restart: unless-stopped
-        env_file: .mysql.env
-        ports:
-            - "3306:3306"
-        volumes:
-            - ./volumes/db-conf:/etc/mysql/conf.d
-            - db-var:/var/lib/mysql
-            - db-log:/var/log/mysql
-        cap_add:
-            - SYS_NICE
-    api:
-        depends_on:
-            - db
-        build: ./api
-        restart: unless-stopped
-        env_file: ./.mysql.env
-    nginx:
-        depends_on:
-            - api
-        image: nginx:1.19.2-alpine-perl
-        restart: unless-stopped
-        ports:
-            - "${HTTP_PORT:-80}:80"
-            - "${HTTPS_PORT:-443}:443"
-        volumes:
-            - ./volumes/nginx-etc:/etc/nginx/conf.d
-            - ./volumes/nginx-letsencrypt:/etc/letsencrypt
-            - ./volumes/nginx-www:/var/www
-            - nginx-log:/var/log/nginx/
-    pma_source_db:
-        image: phpmyadmin/phpmyadmin
-        environment:
-            - PMA_HOST=sourcedb
-            - PMA_PORT=3306
-        ports:
-            - 82:80
-    pma_prod_db:
-        image: phpmyadmin/phpmyadmin
-        environment:
-            - PMA_HOST=db
-            - PMA_PORT=3306
-        ports:
-            - 81:80
+  sourcedb:
+    build: ./api/docker/sshcli
+    restart: unless-stopped
+    environment:
+      - SSHCLI_SSH_ID_ACCESS=${SSHCLI_SSH_ID_ACCESS:-}
+      - SSHCLI_SSH_CONFIG=${SSHCLI_SSH_CONFIG:-}
+    ports:
+      - 3307:3306
+    command: [ "ssh", "-NL", "0.0.0.0:3306:${SOURCEDB_HOST:-localhost}:${SOURCEDB_HOST_PORT:-3306}", "${SOURCE_DB_PROXY_HOST}" ]
+  db:
+    image: mysql:8.0.21
+    restart: unless-stopped
+    depends_on:
+      - sourcedb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+    command: --federated
+    env_file: .mysql.env
+    ports:
+      - 3306:3306
+    volumes:
+      - db-conf:/etc/mysql/conf.d
+      - db-var:/var/lib/mysql
+      - db-log:/var/log/mysql
+    cap_add:
+      - SYS_NICE
+  api:
+    depends_on:
+      - db
+    build: ./api
+    restart: unless-stopped
+    env_file:
+      - .mysql.env
+      - .api.env
+  nginx:
+    depends_on:
+      - api
+    build: ./www
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - nginx-letsencrypt-certs:/etc/letsencrypt
+      - nginx-letsencrypt-data:/var/lib/letsencrypt
+      - nginx-log:/var/log/nginx/
+  cert:
+    image: certbot/certbot
+    restart: "no"
+    volumes:
+      - nginx-letsencrypt-certs:/etc/letsencrypt
+      - nginx-letsencrypt-data:/var/lib/letsencrypt
 volumes:
-    db-var:
-    db-log:
-    nginx-log:
+  db-conf:
+  db-var:
+  db-log:
+  nginx-letsencrypt-certs:
+  nginx-letsencrypt-data:
+  nginx-log:
