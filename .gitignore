@@ -1,7 +1,6 @@
 /.idea
-/volumes
 /backup
+/.vagrant
 
 /*.env
-!/.example.*.env
-!/.example.env
+!/.example*.env

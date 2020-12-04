@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  sourcedb:
+    image: alpine:latest
+    restart: "no"
+    entrypoint: "true"
+    command: "true"
+  db:
+    image: zworkroman/sshcli
+    restart: unless-stopped
+    environment:
+      - SSHCLI_SSH_ID_ACCESS=${SSHCLI_SSH_ID_ACCESS:-}
+      - SSHCLI_SSH_CONFIG=${SSHCLI_SSH_CONFIG:-}
+    command: [ "ssh", "-NL", "0.0.0.0:3306:${DB_HOST:-localhost}:${DB_HOST_PORT:-3306}", "${DB_PROXY_HOST}" ]

@@ -1,6 +1,0 @@
-[submodule "horse24-api"]
-	path = api
-	url = git@github.com:aal-zwork/hores24-api.git
-[submodule "www"]
-	path = www
-	url = git@github.com:aal-zwork/horse24-fe.git
